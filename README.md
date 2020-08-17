@@ -14,4 +14,5 @@ Hardware:
 
 TODO:
 Add checks and retrying 
-
+Add circuit
+Add Images
