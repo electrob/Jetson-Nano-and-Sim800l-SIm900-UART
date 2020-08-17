@@ -6,3 +6,9 @@ dependencies (python module):
 -pyserial
 
 -threading 
+
+Hardware:
+
+-Gsm Module sim800l
+-FTDI (USB TO UART)
+
