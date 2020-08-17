@@ -12,3 +12,6 @@ Hardware:
 -Gsm Module sim800l
 -FTDI (USB TO UART)
 
+TODO:
+Add checks and retrying 
+
