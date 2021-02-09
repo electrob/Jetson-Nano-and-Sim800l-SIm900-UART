@@ -1,18 +1,18 @@
-# jetson_nano-sim800l
-interface of GSM Module sim800l with Jetson Nano
+# Jetson Nano + Sim800l/Sim900a
 
-dependencies (python module):
+## Interfacing the GSM Module *sim800l* with Jetson Nano
 
--pyserial
+#### Dependencies (python module):
 
--threading 
+`1. pyserial
+ 2. threading`
 
-Hardware:
+#### Hardware:
 
--Gsm Module sim800l
--FTDI (USB TO UART)
+`1. Gsm Module sim800l
+ 2. FTDI (USB TO UART)
 
-TODO:
-Add checks and retrying 
-Add circuit
-Add Images
+##### TODO:
+##### Add checks and retrying 
+##### Add circuit
+##### Add Images
