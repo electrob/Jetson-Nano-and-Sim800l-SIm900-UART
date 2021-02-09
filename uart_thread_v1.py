@@ -10,20 +10,24 @@ q = queue.Queue(maxsize = 3)
 serial_lock = threading.Lock()
 queue_lock = threading.Lock()
 
+# Response mechanism
 class ATResp(IntEnum):
     ErrorNoResponse=-1
     ErrorDifferentResponse=0
     OK=1
 
+# Define serial port config
 serial_port = serial.Serial(
     port="/dev/ttyUSB0",
     baudrate=9600
 )
 time.sleep(1)
 
+# Unncessary Bluffer cleanup
 serial_port.reset_output_buffer()
 serial_port.reset_input_buffer()
 
+# This subroutine was blatantly copied from someone. Will add credits when I get ahold of the repo and the person made it.
 def sendATCmdWaitReturnResp(cmd, response, timeout=.5, interByteTimeout=.1):
         """
         This function is designed to return data and check for a final response, e.g. 'OK'
@@ -58,62 +62,65 @@ def sendATCmdWaitReturnResp(cmd, response, timeout=.5, interByteTimeout=.1):
         serial_lock.release() 
         return (ATResp.ErrorDifferentResponse, None)
         
-
+# Start and setup the GSM module
+# TODO: Description for each AT command
+#       Move the AT commands to MACROS?
 def gsm_start():
     sendATCmdWaitReturnResp("ATE0", "OK")
     sendATCmdWaitReturnResp("AT+CPIN?", "READY")
     sendATCmdWaitReturnResp("AT+CIPSPRT=0", "OK")
     sendATCmdWaitReturnResp("AT+CGCLASS?", "OK")
 
+# Setting up the GPRS for HTTP Stack iniliatizwation
+# If not done, the HTTP Stack of the GSM module wont work properly.
 def gsm_gprs_setup(apn, user, pwd):
     at_cmd_1 = "AT+CSTT="
     at_cmd_1 = at_cmd_1 + "\""+apn+"\""+","+"\""+user+"\""+","+"\""+pwd+"\""
        
     sendATCmdWaitReturnResp("AT+CREG?", "OK")
- #   sendATCmdWaitReturnResp("AT+CIPSHUT", "OK")
     sendATCmdWaitReturnResp(at_cmd_1, "OK")
-   # sendATCmdWaitReturnResp("AT+CGACT=0", "OK")
     sendATCmdWaitReturnResp("AT+CGDCONT=1,\"IP\",\""+apn+"\"","OK")
-   # sendATCmdWaitReturnResp("AT+CGACT=0", "OK")
     time.sleep(3)
-    #sendATCmdWaitReturnResp("AT+CIPSHUT", "OK")
-    #sendATCmdWaitReturnResp("AT+CGATT=1", "OK")
     sendATCmdWaitReturnResp("AT+CGATT=1", "OK")
     sendATCmdWaitReturnResp("AT+CGACT=1", "OK",timeout=5)
 
+# If you want to go with all the pain of using TCP. use this subroutine
+###################################################################
 #def startTCP(server):
-   # sendATCmdWaitReturnResp("AT+CIPMUX=0", "OK")
-   # sendATCmdWaitReturnResp("AT+CIPTKA=1","ERROR")
-    #sendATCmdWaitReturnResp("AT+CIPSTART=\"TCP\",\"ce2da385-1b8f-43c1-8622-c4376c50142c.mock.pstmn.io\",\"80\"", "CONNECTED", timeout=3)
-   # sendATCmdWaitReturnResp("AT+CIPSTART=\"TCP\",\"52.54.153.73\",\"80\"", "CONNECTED", timeout=3)
-   # sendATCmdWaitReturnResp("AT+CIPSTATUS", "CONNECT OK")
-   # sendATCmdWaitReturnResp("AT+CIPSEND", ">", timeout=2)
-   # time.sleep(1)
-   # sendATCmdWaitReturnResp("GET /gsmtest", "");
-   # sendATCmdWaitReturnResp(chr(26), "OK")
-    #sendATCmdWaitReturnResp("AT+CIPSHUT", "OK")
-    #sendATCmdWaitReturnResp("AT+CIPSHUT", "OK")
+#    sendATCmdWaitReturnResp("AT+CIPMUX=0", "OK")
+#    sendATCmdWaitReturnResp("AT+CIPTKA=1","ERROR")
+#    sendATCmdWaitReturnResp("AT+CIPSTART=\"TCP\",\"<YOUR API URL>",\"<PORT> (80)\"", "CONNECTED", timeout=3)
+#    sendATCmdWaitReturnResp("AT+CIPSTART=\"TCP\",\"<IP OF YOUR SERVER>\",\"<PORT (80)>\"", "CONNECTED", timeout=3)
+#    sendATCmdWaitReturnResp("AT+CIPSTATUS", "CONNECT OK")
+#    sendATCmdWaitReturnResp("AT+CIPSEND", ">", timeout=2)
+#    sendATCmdWaitReturnResp("GET /gsmtest", "");
+#    sendATCmdWaitReturnResp(chr(26), "OK")
+#    sendATCmdWaitReturnResp("AT+CIPSHUT", "OK")
+####################################################################
 
+# Send whatever data in the queue
+# We use the built in HTTP Stack of the GSM module, less hassle.
 def gsm_send_data():
     sendATCmdWaitReturnResp("AT+SAPBR=2,1", "OK")
     sendATCmdWaitReturnResp("AT+SAPBR=1,1", "OK")
     sendATCmdWaitReturnResp("AT+HTTPINIT", "OK")
 
     while True:
-        #print("IN TRUE")
-       # queue_lock.acquire()
         if q.full():
             print("IN TRUE FULL")
             queue_lock.acquire()
             count = str(q.get())
             temp = str(q.get())
             humidity = str(q.get())
-            sendATCmdWaitReturnResp("AT+HTTPPARA=\"URL\",\"http://iotapi.aronasoft.com/helpers/functions.php?type=arduinoApiTest&count="+count+"&temp="+temp+"&humidity="+humidity+"\"", "OK")
-            sendATCmdWaitReturnResp("AT+HTTPPARA=\"CID\",1","OK");
-            sendATCmdWaitReturnResp("AT+HTTPACTION=0","OK");
-            sendATCmdWaitReturnResp("\r\n","", timeout=7);
+            
+            # Here we have a HTTP API to which we append the sensor values and then hit it using HTTPACTION AT command
+            sendATCmdWaitReturnResp("AT+HTTPPARA=\"URL\",\"<HERE COMES YOUR HTTP API URL>"+count+"&temp="+temp+"&humidity="+humidity+"\"", "OK")
+            sendATCmdWaitReturnResp("AT+HTTPPARA=\"CID\",1","OK")
+            sendATCmdWaitReturnResp("AT+HTTPACTION=0","OK")
+            sendATCmdWaitReturnResp("\r\n","", timeout=7)
             queue_lock.release() 
 
+# Random Data generation for testing the GPRS conn
 def gsm_data_generator():
     while True:
         print("IN GEN")
@@ -132,22 +139,25 @@ if __name__ == "__main__":
     logging.basicConfig(format=format, level=logging.INFO,
                         datefmt="%H:%M:%S")
     
-   # lock = threading.Lock()
-
+    # lock = threading.Lock()
+    # Starting the gsm module initialization thread
     gsm_start = threading.Thread(target=gsm_start)
     gsm_start.start()
-    #time.sleep(3)
+
+    # Starting the GPRS setup thread
     gsm_gprs_setup = threading.Thread(target=gsm_gprs_setup, args=("airtelgprs.com","",""))
     gsm_gprs_setup.start()
     
     time.sleep(26)
     
+    # Starting the data generation thread
     data_generator = threading.Thread(target=gsm_data_generator, args=())
     data_generator.start()
     
-   # time.sleep(2)
+    # time.sleep(2)
+    # Starting the data sending thread
     gsm_send_data = threading.Thread(target=gsm_send_data, args=())
     gsm_send_data.start()
-
-#    data_generator = threading.Thread(target=gsm_data_generator, args=())
- #   data_generator.start()
+    
+    # data_generator = threading.Thread(target=gsm_data_generator, args=())
+    # data_generator.start()
