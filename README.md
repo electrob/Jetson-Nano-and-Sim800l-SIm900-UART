@@ -4,13 +4,13 @@
 
 #### Dependencies (python module):
 
-`1. pyserial
- 2. threading`
+`1. pyserial`
+`2. threading`
 
 #### Hardware:
 
-`1. Gsm Module sim800l
- 2. FTDI (USB TO UART)
+`1. Gsm Module sim800l`
+`2. FTDI (USB TO UART)`
 
 ##### TODO:
 ##### Add checks and retrying 
