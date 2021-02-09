@@ -15,6 +15,4 @@
 `2. FTDI (USB TO UART)`
 
 ##### TODO:
-##### Add checks and retrying 
-##### Add circuit
-##### Add Images
+##### Add checks and Retry mechanism
